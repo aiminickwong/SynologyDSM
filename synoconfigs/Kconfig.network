@@ -1,0 +1,131 @@
+menu "Network"
+
+config SYNO_SWITCH_NET_DEVICE_NAME
+	bool "Switch net device name to collocate with hardware design"
+	default n
+
+config SYNO_MAX_SWITCHABLE_NET_DEVICE
+	int "Max number of switch net device name"
+	default 8
+	depends on SYNO_SWITCH_NET_DEVICE_NAME
+
+config SYNO_NET_DEVICE_ENCODING_LENGTH
+	int "Encoding length of net device"
+	default 6
+	depends on SYNO_SWITCH_NET_DEVICE_NAME
+
+config SYNO_SKIP_RXDROP_BY_CORE
+	bool "Skip RX packets drop is increasing"
+	default y
+
+config SYNO_REMOVE_TCP_DEBUG
+	bool "Remove tcp debug message"
+	default y
+
+config SYNO_IPV6_RFC_4862
+	bool "IPv6 Stateless Address Autoconfiguration"
+	default y
+
+config SYNO_BONDING_INIT_STATUS
+	bool "Initial the bonding status"
+	default y
+
+config SYNO_BONDING_FIX_ACTIVE
+	bool "Fix a bug in active backup bonding mode"
+	default y
+
+config SYNO_IPV6_LINKLOCAL
+	bool "Assign an interface to IPV6 link local address automatically."
+	default y
+
+config SYNO_COMPAT_WIRELESS
+	bool "Select kernel config for compat-wireless"
+	default y
+	select WIRELESS_EXT
+	select WEXT_PRIV
+
+config SYNO_SFP_UNSUPPORTED_NOTIFY
+	bool "SFP+ module unsupported notify"
+	default y
+
+config SYNO_ALPINE_TUNING_NETWORK_PERFORMANCE
+	bool "Tuning Alpine network performance"
+	default y
+	depends on SYNO_ALPINE
+
+config SYNO_ALPINE_FIX_DMA_RECVFILE
+	bool "Fix Alpine file checksum error when using NET DMA"
+	default y
+	depends on SYNO_ALPINE
+
+config SYNO_ALPINE_ADJUST_RX_EQUAL
+	bool "Add an option to turn on/off 10G rx equalization according to sys entry"
+	default y
+	depends on SYNO_ALPINE
+
+config SYNO_ALPINE_CHANGE_RJ45_LED_BEHAVIOR
+	bool "Adjust Alpine backplane RJ45 LED behavior"
+	default y
+	depends on SYNO_ALPINE
+
+config SYNO_ALPINE_BROKEN_PHY_WOL_WORKAROUND
+	bool "Workaround for PHY status error and cannot be woke on lan"
+	depends on SYNO_ALPINE
+	default y
+
+config SYNO_ALPINE_MALFUNCTIONAL_PHY_WORKAROUND
+	bool "Workaround for RTL8211DN occasionally has error packets or cannot TX"
+	depends on SYNO_ALPINE
+	default y
+
+config SYNO_MONACO_NETWORK_FIXED
+	bool "Fix network when link speed on 10Mb/s"
+	default y
+	depends on SYNO_LSP_MONACO
+
+config SYNO_MONACO_JUMBO_FRAME
+	bool "Fix MTU 9000 and 1500 hybrid test kernel panic"
+	default y
+	depends on SYNO_MONACO
+
+config SYNO_PHY_INIT
+	bool "syno initialization of phy device"
+	default y
+
+config SYNO_PHY_INIT_88E1514
+	bool "Enable phy driver of the phy 88E1514"
+	default y
+	depends on SYNO_PHY_INIT
+
+config SYNO_INCREASE_SKB_SIZE
+       bool "Increase skb size to 2K"
+       default y
+       depends on SYNO_MONACO
+
+config SYNO_INCREASE_TSQ_SIZE
+	   bool "Increase TSQ size"
+	   default y
+	   depends on SYNO_ARMADA
+
+config SYNO_IPV6_EXPORT_IN6ADDR_ANY
+	bool "Export in6addr_any value for modules"
+	default y
+
+config SYNO_CVE_2016_5696
+	bool "Fix CVE-2016-5696"
+	default y
+
+config SYNO_NF_NAT_WORKAROUND
+       bool "Fix BUG_ON on nf_nat_setup_info when HA is running"
+       default y
+
+config SYNO_ALPINE_AQR105_PHY
+	bool "Drivers for Aqantia aqr105 phy"
+	depends on SYNO_LSP_ALPINE
+
+config SYNO_ALPINE_SKB_TRUESIZE_ADJUST
+	bool "Adjust truesize_of skb avoild warnon"
+	depends on SYNO_ALPINE
+	default y
+
+endmenu #Network
