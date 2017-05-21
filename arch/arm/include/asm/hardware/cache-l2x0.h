@@ -1,7 +1,22 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
- 
+/*
+ * arch/arm/include/asm/hardware/cache-l2x0.h
+ *
+ * Copyright (C) 2007 ARM Limited
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+
 #ifndef __ASM_ARM_HARDWARE_L2X0_H
 #define __ASM_ARM_HARDWARE_L2X0_H
 
@@ -32,7 +47,10 @@
 #define L2X0_CLEAN_INV_LINE_PA		0x7F0
 #define L2X0_CLEAN_INV_LINE_IDX		0x7F8
 #define L2X0_CLEAN_INV_WAY		0x7FC
- 
+/*
+ * The lockdown registers repeat 8 times for L310, the L210 has only one
+ * D and one I lockdown register at 0x0900 and 0x0904.
+ */
 #define L2X0_LOCKDOWN_WAY_D_BASE	0x900
 #define L2X0_LOCKDOWN_WAY_I_BASE	0x904
 #define L2X0_LOCKDOWN_STRIDE		0x08
@@ -47,6 +65,7 @@
 #define   L2X0_DYNAMIC_CLK_GATING_EN	(1 << 1)
 #define   L2X0_STNDBY_MODE_EN		(1 << 0)
 
+/* Registers shifts and masks */
 #if defined(CONFIG_SYNO_LSP_HI3536)
 #define L2X0_CACHE_ID_REV_MASK		(0x3f)
 #endif  
@@ -98,9 +117,9 @@
 extern void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask);
 #if defined(CONFIG_CACHE_L2X0) && defined(CONFIG_OF)
 extern int l2x0_of_init(u32 aux_val, u32 aux_mask);
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 extern int l2x0_of_init_coherent(u32 aux_val, u32 aux_mask);
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 #else
 static inline int l2x0_of_init(u32 aux_val, u32 aux_mask)
 {
@@ -111,7 +130,10 @@ static inline int l2x0_of_init(u32 aux_val, u32 aux_mask)
 struct l2x0_regs {
 	unsigned long phy_base;
 	unsigned long aux_ctrl;
-	 
+	/*
+	 * Whether the following registers need to be saved/restored
+	 * depends on platform
+	 */
 	unsigned long tag_latency;
 	unsigned long data_latency;
 	unsigned long filter_start;
@@ -123,6 +145,6 @@ struct l2x0_regs {
 
 extern struct l2x0_regs l2x0_saved_regs;
 
-#endif  
+#endif /* __ASSEMBLY__ */
 
 #endif
