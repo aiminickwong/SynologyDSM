@@ -1,0 +1,214 @@
+/*
+ * Device Tree file for WD My Cloud Mirror Gen2, based on Marvell Armada 385 SoC
+ *
+ * Allester Fox <fox.axon@gmail.com>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "armada-385-388.dtsi"
+
+/ {
+	model = "WD MyCloud Mirror gen2 (Armada 385)";
+	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada38x";
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x00000000 0x20000000>; /* 512 MB */
+	};
+
+	soc {
+
+		internal-regs {
+			ethernet@34000 {
+				status = "okay";
+				phy = <&phy0>;
+				phy-mode = "sgmii";
+			};
+
+			i2c0: i2c@11000 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			i2c1: i2c@11100 {
+				status = "okay";
+				clock-frequency = <100000>;
+			};
+
+			mdio {
+				phy0: ethernet-phy@0 {
+					reg = <0>;
+				};
+			};
+
+			sata@a8000 {
+				status = "okay";
+			};
+
+			sdhci@d8000 {
+				broken-cd;
+				wp-inverted;
+				bus-width = <8>;
+				status = "disabled";
+				no-1-8-v;
+			};
+
+			serial@12100 {
+				status = "okay";
+			};
+      
+			serial@12000 {
+				status = "okay";
+			};
+
+			spi0: spi@10600 {
+				status = "disabled";
+			};
+
+			spi1: spi@10680 {
+				status = "disabled";
+			};
+
+			nfc: nand@d0000 {
+				status = "okay";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				nfc,nfc-mode  = "normal";	/* normal or ganged */
+				nfc,nfc-dma   = <0>;		/* 0 for no, 1 for dma */
+				nfc,nfc-width = <8>;
+				nfc,ecc-type  = <1>;		/* 4 bit */
+				nfc,num-cs    = <1>;
+
+				mtd0@00000000 {
+					label = "U-Boot";
+					reg = <0x00000000 0x00500000>;
+					read-only;
+				};
+
+				mtd1@00500000 {
+					label = "uImage";
+					reg = <0x00500000 0x00500000>;
+				};
+
+				mtd2@00a00000 {
+					label = "uRamdisk";
+					reg = <0x00a00000 0x00500000>;
+				};
+				
+				mtd3@00f00000 {
+					label = "image.cfs";
+					reg = <0x00f00000 0x0b900000>;
+				};
+
+				mtd4@c800000 {
+					label = "rescue fw";
+					reg = <0x0c800000 0x00f00000>;
+				};
+				
+				mtd5@d70000 {
+					label = "config";
+					reg = <0x0d700000 0x01400000>; 
+				};
+				
+				mtd6@eb00000 {
+					label = "reserve1";
+					reg = <0x0eb00000 0x00a00000>;
+				};
+				
+				mtd7@f500000 {
+					label = "reserve2";
+					reg = <0x0f500000 0x00a00000>;
+				};
+			};
+
+			crypto@9D000 {
+				status = "okay";
+			};
+
+			pm_pic {
+				pinctrl-0 = <&pic_pins>;
+				pinctrl-names = "default";
+				ctrl-gpios = <&gpio0 21 GPIO_ACTIVE_LOW>,
+					     <&gpio1 15 GPIO_ACTIVE_LOW>;
+			};
+
+			pinctrl {
+				xhci0_vbus_pins: xhci0-vbus-pins {
+					marvell,pins = "mpp26";
+					marvell,function = "gpio";
+				};
+				pic_pins: pic-pins-0 {
+					marvell,pins = "mpp21", "mpp47";
+					marvell,function = "gpio";
+				};
+				btn_pins: btn-pins {
+					marvell,pins = "mpp50";
+					marvell,function = "gpio";
+				};
+			};
+
+			gpio_keys {
+				compatible = "gpio-keys";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				pinctrl-0 = <&btn_pins>;
+				pinctrl-names = "default";
+
+				button@1 {
+					label = "Reset";
+					linux,code = <KEY_RESTART>;
+					gpios = <&gpio1 18 GPIO_ACTIVE_LOW>;
+					gpio-key,wakeup;
+				};
+			};
+		};
+
+		pcie-controller {
+			status = "okay";
+			/*
+			 * The two PCIe units are accessible through
+			 * standard PCIe slots on the board.
+			 */
+			pcie@1,0 {
+				/* Port 0, Lane 0 */
+				status = "disabled";
+			};
+			pcie@2,0 {
+				/* Port 1, Lane 0 */
+				status = "disabled";
+			};
+		};
+	};
+
+	usb3_phy_gpio: usb3-phy-gpio {
+		compatible = "usb-nop-xceiv";
+		vcc-supply = <&reg_usb3_vbus_gpio>;
+	};
+
+	reg_usb3_vbus_gpio: usb3-vbus-gpio {
+		compatible = "mv,vbus-regulator";
+		pinctrl-names = "default";
+		pinctrl-0 = <&xhci0_vbus_pins>;
+		regulator-name = "xhci0-vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		gpio = <&gpio1 26 GPIO_ACTIVE_HIGH>;
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
+	};
+};
