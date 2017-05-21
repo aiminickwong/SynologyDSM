@@ -1,26 +1,36 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
- 
+/*
+ * Device Tree support for Armada 370 and XP platforms.
+ *
+ * Copyright (C) 2012 Marvell
+ *
+ * Lior Amsalem <alior@marvell.com>
+ * Gregory CLEMENT <gregory.clement@free-electrons.com>
+ * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/of_address.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 #include <linux/of_platform.h>
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 #include <linux/io.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 #include <linux/clocksource.h>
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
 #include <linux/time-armada-370-xp.h>
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 #include <linux/clk/mvebu.h>
 #include <linux/dma-mapping.h>
 #include <linux/mbus.h>
 #include <linux/irqchip.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 #include <linux/slab.h>
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -28,7 +38,7 @@
 #include "armada-370-xp.h"
 #include "common.h"
 #include "coherency.h"
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 #include "mvebu-soc-id.h"
 
 static void __init armada_370_xp_map_io(void)
@@ -54,6 +64,11 @@ static void __init i2c_quirk(void)
 	struct device_node *np;
 	u32 dev, rev;
 
+	/*
+	 * Only revisons more recent than A0 support the offload
+	 * mechanism. We can exit only if we are sure that we can
+	 * get the SoC revision and it is more recent than A0.
+	 */
 	if (mvebu_get_soc_id(&rev, &dev) == 0 && dev > MV78XX0_A0_REV)
 		return;
 
@@ -110,7 +125,7 @@ DT_MACHINE_START(ARMADA_XP_DT, "Marvell Armada XP (Device Tree)")
 	.flags          = (MACHINE_NEEDS_CPOLICY_WRITEALLOC |
 			   MACHINE_NEEDS_SHAREABLE_PAGES),
 MACHINE_END
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
 
 static struct map_desc armada_370_xp_io_desc[] __initdata = {
 	{
@@ -136,6 +151,10 @@ void __init armada_370_xp_init_early(void)
 {
 	char *mbus_soc_name;
 
+	/*
+	 * This initialization will be replaced by a DT-based
+	 * initialization once the mvebu-mbus driver gains DT support.
+	 */
 	if (of_machine_is_compatible("marvell,armada370"))
 		mbus_soc_name = "marvell,armada370-mbus";
 	else
@@ -174,4 +193,4 @@ DT_MACHINE_START(ARMADA_XP_DT, "Marvell Armada 370/XP (Device Tree)")
 	.restart	= mvebu_restart,
 	.dt_compat	= armada_370_xp_dt_compat,
 MACHINE_END
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */

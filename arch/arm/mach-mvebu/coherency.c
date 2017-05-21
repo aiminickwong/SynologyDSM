@@ -1,7 +1,22 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
- 
+/*
+ * Coherency fabric (Aurora) support for Armada 370 and XP platforms.
+ *
+ * Copyright (C) 2012 Marvell
+ *
+ * Yehuda Yitschak <yehuday@marvell.com>
+ * Gregory Clement <gregory.clement@free-electrons.com>
+ * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ *
+ * The Armada 370 and Armada XP SOCs have a coherency fabric which is
+ * responsible for ensuring hardware coherency between all CPUs and between
+ * CPUs and I/O masters. This file initializes the coherency fabric and
+ * supplies basic routines for configuring and controlling hardware coherency
+ */
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/of_address.h>
@@ -9,34 +24,41 @@
 #include <linux/smp.h>
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 #include <linux/pci.h>
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 #include <asm/smp_plat.h>
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 #include <asm/cacheflush.h>
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 #include "armada-370-xp.h"
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 extern void armada_380_scu_enable(void);
 static int coherency_type(void);
 unsigned long coherency_phys_base;
 void __iomem *coherency_base;
-#else  
- 
+#else /* CONFIG_SYNO_LSP_ARMADA */
+/*
+ * Some functions in this file are called very early during SMP
+ * initialization. At that time the device tree framework is not yet
+ * ready, and it is not possible to get the register address to
+ * ioremap it. That's why the pointer below is given with an initial
+ * value matching its virtual mapping
+ */
 static void __iomem *coherency_base = ARMADA_370_XP_REGS_VIRT_BASE + 0x20200;
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 static void __iomem *coherency_cpu_base;
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 bool coherency_hard_mode;
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 
+/* Coherency fabric registers */
 #define COHERENCY_FABRIC_CFG_OFFSET		   0x4
 
 #define IO_SYNC_BARRIER_CTL_OFFSET		   0x0
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 enum {
 	COHERENCY_FABRIC_TYPE_NONE,
 	COHERENCY_FABRIC_TYPE_ARMADA_370_XP,
@@ -44,6 +66,11 @@ enum {
 	COHERENCY_FABRIC_TYPE_ARMADA_380,
 };
 
+/*
+ * The "marvell,coherency-fabric" compatible string is kept for
+ * backward compatibility reasons, and is equivalent to
+ * "marvell,armada-370-coherency-fabric".
+ */
 static struct of_device_id of_coherency_table[] = {
 	{.compatible = "marvell,coherency-fabric",
 	 .data = (void*) COHERENCY_FABRIC_TYPE_ARMADA_370_XP },
@@ -53,20 +80,20 @@ static struct of_device_id of_coherency_table[] = {
 	 .data = (void*) COHERENCY_FABRIC_TYPE_ARMADA_375 },
 	{.compatible = "marvell,armada-380-coherency-fabric",
 	 .data = (void*) COHERENCY_FABRIC_TYPE_ARMADA_380 },
-	{   },
+	{ /* end of list */ },
 };
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
 static struct of_device_id of_coherency_table[] = {
 	{.compatible = "marvell,coherency-fabric"},
-	{   },
+	{ /* end of list */ },
 };
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 
-#if defined(MY_ABC_HERE)
- 
+#if defined(CONFIG_SYNO_LSP_ARMADA)
+/* Functions defined in coherency_ll.S */
 int ll_enable_coherency(void);
 void ll_add_cpu_to_smp_group(void);
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
 #ifdef CONFIG_SMP
 int coherency_get_cpu_count(void)
 {
@@ -79,10 +106,11 @@ int coherency_get_cpu_count(void)
 }
 #endif
 
+/* Function defined in coherency_ll.S */
 int ll_set_cpu_coherent(void __iomem *base_addr, unsigned int hw_cpu_id);
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 int set_cpu_coherent(void)
 {
 	int type = coherency_type();
@@ -100,7 +128,7 @@ int set_cpu_coherent(void)
 
 	return 0;
 }
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
 int set_cpu_coherent(unsigned int hw_cpu_id, int smp_group_id)
 {
 	if (!coherency_base) {
@@ -111,7 +139,7 @@ int set_cpu_coherent(unsigned int hw_cpu_id, int smp_group_id)
 
 	return ll_set_cpu_coherent(coherency_base, hw_cpu_id);
 }
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 
 static inline void mvebu_hwcc_sync_io_barrier(void)
 {
@@ -145,13 +173,13 @@ static void mvebu_hwcc_dma_sync(struct device *dev, dma_addr_t dma_handle,
 }
 
 static struct dma_map_ops mvebu_hwcc_dma_ops = {
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 	.alloc			= arm_coherent_dma_alloc,
 	.free			= arm_coherent_dma_free,
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
 	.alloc			= arm_dma_alloc,
 	.free			= arm_dma_free,
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */
 	.mmap			= arm_dma_mmap,
 	.map_page		= mvebu_hwcc_dma_map_page,
 	.unmap_page		= mvebu_hwcc_dma_unmap_page,
@@ -181,13 +209,18 @@ static struct notifier_block mvebu_hwcc_platform_nb = {
 	.notifier_call = mvebu_hwcc_platform_notifier,
 };
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA)
 static void __init armada_370_coherency_init(struct device_node *np)
 {
 	struct resource res;
 	of_address_to_resource(np, 0, &res);
 	coherency_phys_base = res.start;
-	 
+	/*
+	 * Ensure secondary CPUs will see the updated value,
+	 * which they read before they join the coherency
+	 * fabric, and therefore before they are coherent with
+	 * the boot CPU cache.
+	 */
 	sync_cache_w(&coherency_phys_base);
 	coherency_base = of_iomap(np, 0);
 	coherency_cpu_base = of_iomap(np, 1);
@@ -274,7 +307,7 @@ static int __init coherency_pci_notify_init(void)
 }
 
 arch_initcall(coherency_pci_notify_init);
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA */
  
 static int coherency_enabled;
 
@@ -299,4 +332,4 @@ int __init coherency_init(void)
 
 	return 0;
 }
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA */

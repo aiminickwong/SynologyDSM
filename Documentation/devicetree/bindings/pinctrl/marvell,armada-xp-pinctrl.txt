@@ -92,3 +92,6 @@ mpp63         63       gpio, dev(ad28)
 mpp64         64       gpio, dev(ad29)
 mpp65         65       gpio, dev(ad30)
 mpp66         66       gpio, dev(ad31)
+
+Notes:
+* {1} vdd(cpu2-3-pd) only available on mv78460.

@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * SMP support: Entry point for secondary CPUs
  *
@@ -22,8 +19,8 @@
 ENTRY(a375_secondary_startup)
 ARM_BE8(setend be)
 	bl      v7_invalidate_l1
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
 	bl	armada_38x_scu_power_up
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 	b	secondary_startup
 ENDPROC(a375_secondary_startup)

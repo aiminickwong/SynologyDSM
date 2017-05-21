@@ -1,7 +1,15 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
- 
+/*
+ * Board-level suspend/resume support.
+ *
+ * Copyright (C) 2014 Marvell
+ *
+ * Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2.  This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/init.h>
@@ -25,6 +33,7 @@ static void mvebu_armada_xp_gp_pm_enter(void __iomem *sdram_reg, u32 srcmd)
 	u32 reg, ackcmd;
 	int i;
 
+	/* Put 001 as value on the GPIOs */
 	for (i = 0; i < pic_gpios_num; i++) {
 		reg = readl(gpio_ctrl[i]);
 		reg &= ~BIT(pic_raw_gpios[i]);
@@ -33,49 +42,62 @@ static void mvebu_armada_xp_gp_pm_enter(void __iomem *sdram_reg, u32 srcmd)
 		writel(reg, gpio_ctrl[i]);
 	}
 
+	/* Prepare writing 111 to the GPIOs */
+	/* This code assumes that the ack bits (#1 and possibly #2) belong to the same GPIO group */
 	ackcmd = readl(gpio_ctrl[pic_gpios_num-1]);
 	for (i = 0; i < pic_gpios_num; i++) {
 		if (gpio_ctrl[i] == gpio_ctrl[pic_gpios_num-1])
 			ackcmd |= BIT(pic_raw_gpios[i]);
 	}
 
+	/*
+	 * Wait a while, the PIC needs quite a bit of time between the
+	 * two GPIO commands.
+	 */
 	mdelay(3000);
 
 	asm volatile (
-		 
+		/* Align to a cache line */
 		".balign 32\n\t"
 
+		/* Enter self refresh */
 		"str %[srcmd], [%[sdram_reg]]\n\t"
 
+		/*
+		 * Wait 100 cycles for DDR to enter self refresh, by
+		 * doing 50 times two instructions.
+		 */
 		"mov r1, #50\n\t"
 		"1: subs r1, r1, #1\n\t"
 		"bne 1b\n\t"
 
+		/* Issue the command ACK */
 		"str %[ackcmd], [%[gpio_ctrl]]\n\t"
 
+		/* Trap the processor */
 		"b .\n\t"
 		: : [srcmd] "r" (srcmd), [sdram_reg] "r" (sdram_reg),
 		  [ackcmd] "r" (ackcmd), [gpio_ctrl] "r" (gpio_ctrl[pic_gpios_num-1]) : "r1");
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
 static int __init mvebu_armada_xp_gp_pm_init(void)
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 static int mvebu_armada_xp_gp_pm_init(void)
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 {
 	struct device_node *np;
 	struct device_node *gpio_ctrl_np;
 	int ret = 0, i;
 
-#if defined(MY_ABC_HERE)
-	 
-#else  
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
+	// do nothing
+#else /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 	if (!of_machine_is_compatible("marvell,axp-gp") &&
 		!of_machine_is_compatible("marvell,a388-db-gp") &&
 		!of_machine_is_compatible("marvell,a385-db-ap"))
 		return -ENODEV;
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 
 	np = of_find_node_by_name(NULL, "pm_pic");
 	if (!np)
@@ -137,18 +159,18 @@ static int mvebu_armada_xp_gp_pm_init(void)
 		}
 	}
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
 	mvebu_pm_suspend_init(mvebu_armada_xp_gp_pm_enter);
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 	mvebu_pm_init(mvebu_armada_xp_gp_pm_enter);
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 
 out:
 	of_node_put(np);
 	return ret;
 }
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
 int __init mvebu_armada_xp_gp_pm_register(void)
 {
 	if (of_machine_is_compatible("marvell,axp-gp") ||
@@ -158,6 +180,6 @@ int __init mvebu_armada_xp_gp_pm_register(void)
 	return 0;
 }
 arch_initcall(mvebu_armada_xp_gp_pm_register);
-#else  
+#else /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 late_initcall(mvebu_armada_xp_gp_pm_init);
-#endif  
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */

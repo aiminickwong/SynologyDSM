@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 /*
  * Copyright (C) 2014 Marvell
  *
@@ -15,7 +12,7 @@
 #include <linux/linkage.h>
 #include <asm/assembler.h>
 
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
 ENTRY(armada_38x_scu_power_up)
 	mrc     p15, 4, r1, c15, c0	@ get SCU base address
 	orr	r1, r1, #0x8		@ SCU CPU Power Status Register
@@ -26,7 +23,7 @@ ENTRY(armada_38x_scu_power_up)
 	strb	r0, [r1]		@ switch SCU power state to Normal mode
 	mov	pc, lr
 ENDPROC(armada_38x_scu_power_up)
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 
 /*
  * This is the entry point through which CPUs exiting cpuidle deep
@@ -51,9 +48,9 @@ ENTRY(armada_38x_cpu_resume)
 	/* do we need it for Armada 38x*/
 ARM_BE8(setend	be )			@ go BE8 if entered LE
 	bl	v7_invalidate_l1
-#if defined(MY_ABC_HERE)
+#if defined(CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4)
 	bl	armada_38x_scu_power_up
-#else /* MY_ABC_HERE */
+#else /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 	mrc     p15, 4, r1, c15, c0	@ get SCU base address
 	orr	r1, r1, #0x8		@ SCU CPU Power Status Register
 	mrc	15, 0, r0, cr0, cr0, 5	@ get the CPU ID
@@ -61,7 +58,7 @@ ARM_BE8(setend	be )			@ go BE8 if entered LE
 	add	r1, r1, r0
 	mov	r2, #0x0
 	strb	r2, [r1]		@ switch SCU power state to Normal mode
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_LSP_ARMADA_2015_T1_1p4 */
 
 	/*
 	 * PCIe deadlock WA for Armada 38x cpuidle:
